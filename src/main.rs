@@ -1,10 +1,16 @@
+use crossterm::{
+    ExecutableCommand, QueueableCommand, cursor, style::{self, ContentStyle, Stylize}, terminal,
+};
 use k_board::{keyboard::Keyboard, keys::Keys};
-use rodio::{Decoder, MixerDeviceSink, source::Source};
+use rodio;
 use std::fs::File;
 use std::io::BufReader;
+use std::io::{self, Write};
 use std::time::Duration;
 
 fn main() -> std::io::Result<()> {
+
+            clearscreen::clear().expect("failed to clear screen");
     let sink_handle =
         rodio::DeviceSinkBuilder::open_default_sink().expect("open default audio stream");
 
@@ -27,22 +33,48 @@ fn main() -> std::io::Result<()> {
                         tmp -= 0.1;
                         tmp
                     });
-                },
-                _ => {
-
                 }
+                _ => {}
             };
-        clearscreen::clear().expect("failed to clear screen");
-        menu(player.volume(),player.get_pos());
+            clearscreen::clear().expect("failed to clear screen");
+            menu(player.volume(), player.get_pos());
         }
     }
     Ok(())
 }
 
-fn menu(volume : f32, player_pos : Duration) {
-
+fn menu(mut volume: f32, player_pos: Duration) -> std::io::Result<()> {
     //for 1..10{
     //    println!("")
     //}
-    println!("Volume is {} \nDuration is {:?} ",volume,player_pos.as_secs())
+    
+    let termWidth : u16 = crossterm::terminal::size().unwrap().0;
+    let termHeight : u16 = crossterm::terminal::size().unwrap().1;
+
+    if volume < 0.0{
+        volume = 0.0;
+    }
+
+    let mut stdout = io::stdout();
+    let menu_text = format!("Volume is {:.2} Duration is {:?} Seconds",volume,player_pos.as_secs());
+    for y in 0..termHeight {
+        for x in 0..termWidth {
+            if (y == 0 || y == termHeight - 1) || (x == 0 || x == termWidth - 1) {
+                // in this loop we are more efficient by not flushing the buffer.
+                stdout
+                    .queue(cursor::MoveTo(x, y))?
+                    .queue(style::PrintStyledContent("█".magenta()))?;
+            }
+            if (x==(termWidth / 2) - u16::try_from(menu_text.len() / 2).unwrap())
+                && (y==termHeight /2) {
+                stdout.queue(cursor::MoveTo(x,y))?
+                    .queue(style::PrintStyledContent(menu_text.clone()
+                            .magenta()))?;
+            }
+
+    }
+    }
+    stdout.flush();
+
+    Ok(())
 }
