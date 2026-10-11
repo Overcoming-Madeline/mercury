@@ -1,5 +1,7 @@
 use crossterm::{
-    ExecutableCommand, QueueableCommand, cursor, style::{self, ContentStyle, Stylize}, terminal,
+    ExecutableCommand, QueueableCommand, cursor,
+    style::{self, ContentStyle, Stylize},
+    terminal,
 };
 use k_board::{keyboard::Keyboard, keys::Keys};
 use rodio;
@@ -9,8 +11,7 @@ use std::io::{self, Write};
 use std::time::Duration;
 
 fn main() -> std::io::Result<()> {
-
-            clearscreen::clear().expect("failed to clear screen");
+    clearscreen::clear().expect("failed to clear screen");
     let sink_handle =
         rodio::DeviceSinkBuilder::open_default_sink().expect("open default audio stream");
 
@@ -47,16 +48,20 @@ fn menu(mut volume: f32, player_pos: Duration) -> std::io::Result<()> {
     //for 1..10{
     //    println!("")
     //}
-    
-    let termWidth : u16 = crossterm::terminal::size().unwrap().0;
-    let termHeight : u16 = crossterm::terminal::size().unwrap().1;
 
-    if volume < 0.0{
+    let termWidth: u16 = crossterm::terminal::size().unwrap().0;
+    let termHeight: u16 = crossterm::terminal::size().unwrap().1;
+
+    if volume < 0.0 {
         volume = 0.0;
     }
 
     let mut stdout = io::stdout();
-    let menu_text = format!("Volume is {:.2} Duration is {:?} Seconds",volume,player_pos.as_secs());
+    let menu_text = format!(
+        "Volume is {:.2} Duration is {:?} Seconds",
+        volume,
+        player_pos.as_secs()
+    );
     for y in 0..termHeight {
         for x in 0..termWidth {
             if (y == 0 || y == termHeight - 1) || (x == 0 || x == termWidth - 1) {
@@ -65,14 +70,14 @@ fn menu(mut volume: f32, player_pos: Duration) -> std::io::Result<()> {
                     .queue(cursor::MoveTo(x, y))?
                     .queue(style::PrintStyledContent("█".magenta()))?;
             }
-            if (x==(termWidth / 2) - u16::try_from(menu_text.len() / 2).unwrap())
-                && (y==termHeight /2) {
-                stdout.queue(cursor::MoveTo(x,y))?
-                    .queue(style::PrintStyledContent(menu_text.clone()
-                            .magenta()))?;
+            if (x == (termWidth / 2) - u16::try_from(menu_text.len() / 2).unwrap())
+                && (y == termHeight / 2)
+            {
+                stdout
+                    .queue(cursor::MoveTo(x, y))?
+                    .queue(style::PrintStyledContent(menu_text.clone().magenta()))?;
             }
-
-    }
+        }
     }
     stdout.flush();
 
