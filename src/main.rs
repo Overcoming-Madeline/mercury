@@ -3,16 +3,16 @@ use crossterm::{
     style::{self, Stylize},
 };
 use k_board::{keyboard::Keyboard, keys::Keys};
-use rodio;
+use std::{fs::File, path::Path};
 use std::io::BufReader;
 use std::io::{self, Write};
 use std::time::Duration;
-use std::fs::File;
 
-mod filesWork;
+mod files_work;
 
-use crate::filesWork::filesWork::AllFilesInDirectory;
-use crate::filesWork::filesWork::GetFileInDirectory;
+use crate::files_work::files_work::all_files_in_directory;
+use crate::files_work::files_work::get_files_in_directory;
+use crate::files_work::files_work::get_files_in_directory_with_name;
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
@@ -23,14 +23,27 @@ fn main() -> std::io::Result<()> {
     }
 
     let file_path = &args[1];
+    
+    let path = Path::new(&file_path);
 
 
+    
+    let mut sound_file_result = get_files_in_directory_with_name(file_path.clone());
+
+    if path.is_dir() {
+        if(args.len() <= 2){
+            panic!("No file Name")
+        }
+
+        let file_name = &args[2];
+        sound_file_result = get_files_in_directory(String::from(file_path), String::from(file_name));
+    }
     //clearscreen::clear().expect("failed to clear screen");
     let sink_handle =
         rodio::DeviceSinkBuilder::open_default_sink().expect("open default audio stream");
-    let soundFileResult = GetFileInDirectory(String::from(file_path), String::from("test.mp3"));
 
-    let soundFile = match soundFileResult {
+    
+    let sound_file = match sound_file_result {
         Ok(f) => f,
         Err(error) => match error.kind() {
             std::io::ErrorKind::NotFound => match File::create("hello.txt") {
@@ -44,8 +57,8 @@ fn main() -> std::io::Result<()> {
     };
 
     // Load a sound from a file, using a path relative to Cargo.toml
-    let file = BufReader::new(soundFile);
-    let player = rodio::play(&sink_handle.mixer(), file).unwrap();
+    let file = BufReader::new(sound_file);
+    let player = rodio::play(sink_handle.mixer(), file).unwrap();
     while !player.empty() {
         for key in Keyboard::new() {
             match key {
@@ -65,17 +78,17 @@ fn main() -> std::io::Result<()> {
                 }
                 _ => {}
             };
-            //clearscreen::clear().expect("failed to clear screen");
-            AllFilesInDirectory(String::from("./"))
-            //menu(player.volume(), player.get_pos());
+            clearscreen::clear().expect("failed to clear screen");
+            //all_files_in_directory(String::from("./"))
+            menu(player.volume(), player.get_pos());
         }
     }
     Ok(())
 }
 
 fn menu(mut volume: f32, player_pos: Duration) -> std::io::Result<()> {
-    let termWidth: u16 = crossterm::terminal::size().unwrap().0;
-    let termHeight: u16 = crossterm::terminal::size().unwrap().1;
+    let term_width: u16 = crossterm::terminal::size().unwrap().0;
+    let term_height: u16 = crossterm::terminal::size().unwrap().1;
 
     if volume < 0.0 {
         volume = 0.0;
@@ -87,15 +100,15 @@ fn menu(mut volume: f32, player_pos: Duration) -> std::io::Result<()> {
         volume,
         player_pos.as_secs()
     );
-    for y in 0..termHeight {
-        for x in 0..termWidth {
-            if (y == 0 || y == termHeight - 1) || (x == 0 || x == termWidth - 1) {
+    for y in 0..term_height {
+        for x in 0..term_width {
+            if (y == 0 || y == term_height - 1) || (x == 0 || x == term_width - 1) {
                 stdout
                     .queue(cursor::MoveTo(x, y))?
                     .queue(style::PrintStyledContent("█".magenta()))?;
             }
-            if (x == (termWidth / 2) - u16::try_from(menu_text.len() / 2).unwrap())
-                && (y == termHeight / 2)
+            if (x == (term_width / 2) - u16::try_from(menu_text.len() / 2).unwrap())
+                && (y == term_height / 2)
             {
                 stdout
                     .queue(cursor::MoveTo(x, y))?
