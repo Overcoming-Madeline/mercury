@@ -3,16 +3,18 @@ use crossterm::{
     style::{self, Stylize},
 };
 use k_board::{keyboard::Keyboard, keys::Keys};
-use std::{fs::File, path::Path};
-use std::io::BufReader;
+use rodio::Source;
+use rodio::{Decoder, Player, DeviceSinkBuilder};
+use std::io::{BufReader, Read, Seek};
 use std::io::{self, Write};
 use std::time::Duration;
+use std::{fs::File, path::Path};
 
 mod files_work;
 
-use crate::files_work::files_work::all_files_in_directory;
 use crate::files_work::files_work::get_files_in_directory;
 use crate::files_work::files_work::get_files_in_directory_with_name;
+use crate::files_work::files_work::get_all_audio_files_in_directory;
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
@@ -23,26 +25,15 @@ fn main() -> std::io::Result<()> {
     }
 
     let file_path = &args[1];
-    
+
     let path = Path::new(&file_path);
 
+    let sound_file_result = get_files_in_directory_with_name(file_path.clone());
 
-    
-    let mut sound_file_result = get_files_in_directory_with_name(file_path.clone());
-
-    if path.is_dir() {
-        if(args.len() <= 2){
-            panic!("No file Name")
-        }
-
-        let file_name = &args[2];
-        sound_file_result = get_files_in_directory(String::from(file_path), String::from(file_name));
-    }
     //clearscreen::clear().expect("failed to clear screen");
     let sink_handle =
         rodio::DeviceSinkBuilder::open_default_sink().expect("open default audio stream");
 
-    
     let sound_file = match sound_file_result {
         Ok(f) => f,
         Err(error) => match error.kind() {
@@ -56,31 +47,56 @@ fn main() -> std::io::Result<()> {
         },
     };
 
-    // Load a sound from a file, using a path relative to Cargo.toml
     let file = BufReader::new(sound_file);
     let player = rodio::play(sink_handle.mixer(), file).unwrap();
+    
+    let audiofile = get_all_audio_files_in_directory(path.to_str().unwrap().to_string());
+
+    match audiofile {
+    Ok(files) => {
+        for file in files {
+            match Decoder::try_from(file) {
+                Ok(source) => {player.append(source);
+                println!("loaded file {}",source.size_hint)
+                },
+                Err(error) => eprintln!("Failed to decode audio: {error}"),
+            }
+        }
+    }
+    Err(error) => {
+        panic!("Failed to load audio files: {error}");
+     }
+    }
     while !player.empty() {
         for key in Keyboard::new() {
             match key {
                 Keys::Up => {
                     player.set_volume({
                         let mut tmp = player.volume();
-                        tmp += 0.1;
+                        tmp += 0.01;
                         tmp
                     });
                 }
                 Keys::Down => {
                     player.set_volume({
                         let mut tmp = player.volume();
-                        tmp -= 0.1;
+                        tmp -= 0.01;
                         tmp
                     });
                 }
                 _ => {}
             };
-            clearscreen::clear().expect("failed to clear screen");
+            if player.volume() < 0.0 {
+                player.set_volume(0.0);
+            }
+            //clearscreen::clear().expect("failed to clear screen");
             //all_files_in_directory(String::from("./"))
-            menu(player.volume(), player.get_pos());
+            //let menu_result = menu(player.volume(), player.get_pos());
+
+            match menu_result {
+                Ok(()) => {},
+                Err(_) => {panic!("Menu Error ");}
+            }
         }
     }
     Ok(())
@@ -96,8 +112,8 @@ fn menu(mut volume: f32, player_pos: Duration) -> std::io::Result<()> {
 
     let mut stdout = io::stdout();
     let menu_text = format!(
-        "Volume is {:.2} Duration is {:?} Seconds",
-        volume,
+        "Volume is {:.0}% Duration is {:?} Seconds",
+        volume * 100.0,
         player_pos.as_secs()
     );
     for y in 0..term_height {

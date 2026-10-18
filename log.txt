@@ -1,0 +1,50 @@
+warning: unused import: `rodio::Source`
+ --> src/main.rs:6:5
+  |
+6 | use rodio::Source;
+  |     ^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `DeviceSinkBuilder` and `Player`
+ --> src/main.rs:7:22
+  |
+7 | use rodio::{Decoder, Player, DeviceSinkBuilder};
+  |                      ^^^^^^  ^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `Read` and `Seek`
+ --> src/main.rs:8:26
+  |
+8 | use std::io::{BufReader, Read, Seek};
+  |                          ^^^^  ^^^^
+
+warning: unused import: `crate::files_work::files_work::get_files_in_directory`
+  --> src/main.rs:15:5
+   |
+15 | use crate::files_work::files_work::get_files_in_directory;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `get_files_in_directory` is never used
+ --> src/files_work.rs:7:12
+  |
+7 |     pub fn get_files_in_directory(directory_path: String, file_name: String) -> io::Result<File> 
+  |            ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: module has the same name as its containing module
+  --> src/files_work.rs:1:1
+   |
+ 1 | / pub mod files_work {
+ 2 | |     use std::{
+ 3 | |         fs::File, io::{self},
+ 4 | |     };  
+...  |
+36 | | }
+   | |_^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#module_inception
+   = note: `#[warn(clippy::module_inception)]` on by default
+
+warning: `mercury` (bin "mercury") generated 6 warnings (run `cargo clippy --fix --bin "mercury" -p mercury -- ` to apply 4 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.05s
